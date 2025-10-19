@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: byte-ladder-traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --api.insecure=true
+      - --api.dashboard=true
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  pb:
+    build:
+      context: .
+      dockerfile: Dockerfile.pb
+    container_name: byte-ladder-pb
+    command: ["--http=0.0.0.0:8090"]
+    volumes:
+      - pb_data:/app/pb_data
+    ports:
+      - "8090:8090"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pb.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.pb.entrypoints=web"
+      - "traefik.http.services.pb.loadbalancer.server.port=8090"
+    networks:
+      - traefik
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: byte-ladder-web
+    depends_on:
+      - pb
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_BASE=http://pb:8090
+    restart: unless-stopped
+
+volumes:
+  pb_data:
+
+networks:
+  traefik:
+    driver: bridge
