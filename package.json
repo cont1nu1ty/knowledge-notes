@@ -12,7 +12,8 @@
     "docs:preview": "vitepress preview"
   },
   "devDependencies": {
-    "vitepress": "^1.0.0"
+    "vitepress": "^1.0.0",
+    "vitepress-sidebar": "^1.33.0"
   },
   "dependencies": {
     "vitepress-plugin-comment-with-giscus": "^1.1.15"

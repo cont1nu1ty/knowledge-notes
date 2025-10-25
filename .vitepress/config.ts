@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { generateSidebar } from 'vitepress-sidebar'
 
 export default defineConfig({
   title: 'Knowledge Notes',
@@ -29,36 +30,14 @@ export default defineConfig({
       { text: 'Traefik', link: '/traefik/' }
     ],
     
-    // 侧边栏
-    sidebar: {
-      '/docker/': [
-        {
-          text: 'Docker 学习笔记',
-          items: [
-            { text: '介绍', link: '/docker/' },
-            { text: '示例', link: '/docker/examples/' }
-          ]
-        }
-      ],
-      '/pocketbase/': [
-        {
-          text: 'PocketBase 学习笔记',
-          items: [
-            { text: '介绍', link: '/pocketbase/' },
-            { text: '示例', link: '/pocketbase/examples/' }
-          ]
-        }
-      ],
-      '/traefik/': [
-        {
-          text: 'Traefik 学习笔记',
-          items: [
-            { text: '介绍', link: '/traefik/' },
-            { text: '示例', link: '/traefik/examples/' }
-          ]
-        }
-      ]
-    },
+    // 自动生成侧边栏
+    sidebar: generateSidebar({
+      documentRootPath: '/',
+      useTitleFromFileHeading: true,
+      useFolderTitleFromIndexFile: true,
+      useFolderLinkFromIndexFile: true,
+      collapsed: false
+    }),
     
     // 社交链接
     socialLinks: [
@@ -99,10 +78,5 @@ export default defineConfig({
       light: 'github-light',
       dark: 'github-dark'
     }
-  },
-  
-  // 构建配置
-  build: {
-    outDir: 'dist'
   }
 })
