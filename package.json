@@ -1,5 +1,20 @@
-"scripts": {
-  "docs:dev": "vitepress dev docs",
-  "docs:build": "vitepress build docs",
-  "docs:serve": "vitepress serve docs"
+{
+  "name": "knowledge-notes",
+  "version": "1.0.0",
+  "description": "随着自己做的项目，学习内容的笔记。用来记录、打磨方法论。",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0"
+  },
+  "dependencies": {
+    "vitepress-plugin-comment-with-giscus": "^1.1.15"
+  }
 }

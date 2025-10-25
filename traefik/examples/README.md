@@ -1,39 +1,45 @@
 # 模块名
-Traefik 实现前端代理、服务注册
+Traefik：实现前端代理与服务注册
 
 ## 概述
-Traefik是开源的边缘路由网关，原生支持多种集群，本次学习过程中使用docker进行实践，主要实现前端代理负载均衡、服务注册等功能。
+Traefik 是一个开源的边缘路由网关，原生支持 Docker、Kubernetes 等多种 Provider。  
+本次实践基于 Docker，目标是实现前端代理、负载均衡与服务自动注册。
 
 ## 安装与配置
-对于具备docker的项目，在docker-compose.yml文件的services部分，引入traefik，标注出image、command、ports、volums等内容，并在文件结尾标注使用的网络命名空间。
-此时只需要在其他被代理容器标注出lable 就可以正常运行。
-如示例中 localhost:8090/api/health的访问，经过配置：
--  "traefik.http.routers.pb.rule=PathPrefix(`/api`)"
-就实现 将访问中包含前缀api的请求，反向代理至localhost/api/health。（默认访问80端口）
-显然的，这种方式可以对外隐藏访问端口。
+在具备 Docker 的项目中，可在 `docker-compose.yml` 的 `services` 部分引入 Traefik 服务，指定以下关键配置：
 
-## 核心特性及简易原理
+- `image`：镜像版本  
+- `command`：启动参数（如启用 Docker Provider）  
+- `ports`：对外暴露的端口  
+- `volumes`：挂载 Docker 套接字以便服务发现  
+- `networks`：定义网络命名空间  
+
+其他被代理容器只需通过 `labels` 声明路由规则即可。  
+例如，以下规则实现对 `/api` 前缀请求的反向代理（默认监听 80 端口）：
+
+- "traefik.http.routers.pb.rule=PathPrefix(`/api`)"
+当访问 localhost:8090/api/health 时，Traefik 会将请求转发至后端服务，实现隐藏实际访问端口的效果。
+
+## 核心特性与原理
+核心组件包括 Providers、Entrypoints、Routers、Services、Middlewares。
 
 ### 服务发现
-包括(Providers、Entrypoints、Routers、Services、Middlewares)。
-Provider也就是基础组件，Traefik通过docker（k8s、File）实时扫描注册的服务容器或配置文件（监听变化，无需重启即可更新路由）。
-「command:
+Provider：Traefik 的数据源。启用 Docker Provider 后，Traefik 会实时监控容器的启动与停止，并自动注册或注销路由。
+command:
   - "--providers.docker=true"
-」
-比如，当pb容器（在yml中配置了traefik.http.router...）启动/停止服务后，Traefik会自动注册/移除对应路由。
-Entrypoints则是Traefik的网络入口，定义接受请求的接口、以及是否监听TCP/UDP。
-Routers主要用于分析请求，将对应请求转发。
-Services负责配置如何到达最终将处理传入请求的实际服务（如负载均衡）。
-Middlewares可以对请求做出一些修改（如在请求发送前增加一些headers）。
+Entrypoint：定义 Traefik 接收外部请求的网络入口（TCP/UDP）。
+Router：分析请求并根据规则转发。
+Service：定义请求的后端目标及负载均衡策略。
+Middleware：在请求到达服务前或响应返回客户端后修改报文（如添加 Header、重写路径）。
 
 ### 动态路由
-根据服务自动创建/更新路由规则：请求 → 匹配规则 → 目标服务。
-如「- "traefik.http.routers.api.rule=PathPrefix(`/api`)"」会通过路由规则实现路径匹配，然后（使用中间件）调整路径/跳转目标。
+Traefik 根据定义的规则动态创建或更新路由：请求 → 匹配规则 → 目标服务。
+如「- "traefik.http.routers.api.rule=PathPrefix(`/api`)"」当请求路径匹配 /api 时，Traefik 会自动选择对应的服务并执行必要的中间件操作。
 
 ### 负载均衡
-负载均衡器采用加权轮询。
-权重计算：通过maxWeight()方法确定服务器最大权重，使用weightGcd()计算权重的最大公约数，确保流量分配比例精准。（此处还有计算最大公约数来减少计算冗余）
-动态选择：next()方法实现核心调度逻辑，通过迭代调整当前权重值，优先选择权重较高的服务器。（遍历服务器，计算权值，（优先队列？），被选择的服务器减去总权重（避免下次仍选取））
+Traefik 默认使用加权轮询（Weighted Round Robin）算法。
+权重计算：通过 maxWeight() 确定最大权重，weightGcd() 计算最大公约数以减少冗余计算。
+动态选择：next() 方法按权重遍历服务实例并分配请求。权重较高的实例获得更多流量。（遍历服务器，计算权值，被选择的服务器减去总权重（避免下次仍选取））
 
 ### TLS 终止（to do）
 处理 HTTPS 流量并自动管理证书
